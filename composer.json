@@ -1,0 +1,13 @@
+{
+    "name": "fzerorubigd/elbot",
+    "description": "A general purpose IRC bot",
+    "require": {
+        "pimple/pimple": "dev-master"
+    },
+    "authors": [
+        {
+            "name": "fzerorubigd",
+            "email": "fzerorubigd@gmail.com"
+        }
+    ]
+}
