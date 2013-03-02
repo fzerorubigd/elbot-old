@@ -31,6 +31,10 @@ class Server extends Pimple
 {
     protected $launched = array();
 
+    protected $autostarts = array();
+
+    private $_state = false;
+
     /**
      * Read line (A raw line, any thing whitout any filter)
      * Wait for a line to read, then return the line.
@@ -51,19 +55,20 @@ class Server extends Pimple
      */
     public function writeLine($line)
     {
-        echo $line;
+        throw new \RuntimeException(__CLASS__ . ' must overwrite ' . __METHOD__);
     }
 
 
     /**
      * Register new application in server
      *
-     * @param string $name  application name to use for launch
-     * @param string $class application class
+     * @param string  $name      application name to use for launch
+     * @param string  $class     application class
+     * @param boolean $autostart Auto start application or not
      *
      * @return boolean
      */
-    public function registerApplication($name, $class)
+    public function registerApplication($name, $class, $autostart)
     {
         if (class_exists($class)) {
             $server = &$this;
@@ -80,6 +85,9 @@ class Server extends Pimple
                     return false;
                 }
             };
+            if ($autostart) {
+                $this->autostarts[] = $name;
+            }
             return true;
         }
         return false;
@@ -94,8 +102,16 @@ class Server extends Pimple
      */
     public function launchApplication($app)
     {
+        if (!$this->_state) {
+            return false;
+        }
         if (isset($this['_application.' . $app])) {
-            $appObject = $this['_application.' . $app];
+            try {
+                $appObject = $this['_application.' . $app];
+            } catch (\Exception $e) {
+                unset($appObject);
+                return false;
+            }
             // I prefer to use simple array instead of Pimple
             $this->launched[$appObject->getPid()] = &$appObject;
             return $appObject->getPid();
@@ -112,12 +128,43 @@ class Server extends Pimple
      */
     public function killApplication($app)
     {
+        if (!$this->_state) {
+            return false;
+        }
         if ($this->launched[$app]) {
+            if ($this->launched[$app]->hasAttribute('system') && $this->launched[$app]->getAttribute('system', false) === true) {
+                return false;
+            }
             $this->launched[$app]->kill();
             unset($this->launched[$app]);
             return true;
         }
         return false;
+    }
+
+    /**
+     * Get app by its pid
+     *
+     * @param string $pid Application's pid'
+     *
+     * @return Application
+     */
+    public function getApplication($pid)
+    {
+        if (isset($this->launched[$pid])) {
+            return $this->launched[$pid];
+        }
+        return false;
+    }
+
+    /**
+     * Get running applications
+     *
+     * @return array
+     */
+    public function getApplications()
+    {
+        return $this->launched;
     }
     /**
      * Process the line and return false to exit
@@ -130,7 +177,13 @@ class Server extends Pimple
     {
         $message = new Message($line);
         foreach ($this->launched as $pid => $app) {
-
+            $stop = false;
+            if ($app->match($message)) {
+                $stop = $app->execute($message);
+            }
+            if ($stop) {
+                break;
+            }
         }
     }
 
@@ -138,19 +191,24 @@ class Server extends Pimple
     /**
      * Run application with parameters
      *
-     * @param array $parameters Parameters for this object
+     * @param callable $callable   A callable
+     * @param array    $parameters Parameters for this object
      *
      * @return void
      */
-    public function run(array $parameters = array())
+    public function run($callable = false, array $parameters = array())
     {
         foreach ($parameters as $key => $value) {
             $this[$key] = $value;
         }
-        if (!isset($this['sleep']) || !is_numeric($this['sleep'])) {
-            $this['sleep'] = 1;
-        }
+        $this->_state = true; // Set running flag
         try {
+            foreach ($this->autostarts as $app) {
+                $this->launchApplication($app);
+            }
+            if (is_callable($callable)) {
+                call_user_func($callable, $this);
+            }
             while (true) {
                 $line = $this->readLine();
                 if ($line === false) {
@@ -168,7 +226,10 @@ class Server extends Pimple
                         $this->writeLine($line);
                     }
                 }
-                sleep($this['sleep']);
+                if (isset($this['sleep']) && is_numeric($this['sleep'])) {
+                    sleep($this['sleep']);
+                }
+
             }
         } catch (\Exception $e) {
             echo $e->getMessage();

@@ -4,6 +4,11 @@
     "require": {
         "pimple/pimple": "dev-master"
     },
+    "autoload": {
+        "psr-0": {
+            "Cybits": "src/"
+        }
+    },
     "authors": [
         {
             "name": "fzerorubigd",

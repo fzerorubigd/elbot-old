@@ -4,7 +4,7 @@
  *
  * PHP versions 5.3
  *
- * @category  elbot
+ * @category  Elbot
  * @package   Interactive
  * @author    fzerorubigd <fzerorubigd@gmail.com>
  * @copyright 2013 Authors
@@ -14,11 +14,12 @@
  */
 
 namespace Cybits\Interactive;
+use Cybits\Interactive\Message;
 
 /**
  * Interactive console interface
  *
- * @category  elbot
+ * @category  Elbot
  * @package   Interactive
  * @author    fzerorubigd <fzerorubigd@gmail.com>
  * @copyright 2013 Authors
@@ -27,7 +28,7 @@ namespace Cybits\Interactive;
  * @link      http://cyberrabbits.net
  */
 
-interface Console
+interface ConsoleInterface
 {
     /**
      * Write a line in this console

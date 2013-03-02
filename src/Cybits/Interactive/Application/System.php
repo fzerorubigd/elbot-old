@@ -1,11 +1,11 @@
 <?php
 /**
- * Application abstract class
+ * System application
  *
  * PHP versions 5.3
  *
- * @category  Elbot
- * @package   Interactive
+ * @category  Elbit
+ * @package   Application
  * @author    fzerorubigd <fzerorubigd@gmail.com>
  * @copyright 2013 Authors
  * @license   Custom <http://cyberrabbits.net>
@@ -13,14 +13,14 @@
  * @link      http://cyberrabbits.net
  */
 
-namespace Cybits\Interactive;
-use Cybits\ParameterHolder;
-use Cybits\Interactive\ConsoleInterface;
+namespace Cybits\Interactive\Application;
+use Cybits\Interactive\Application as BaseApplication;
+use Cybits\Interactive\Message;
 /**
- * Application class
+ * System application
  *
- * @category  Elbot
- * @package   Interactive
+ * @category  Elbit
+ * @package   Application
  * @author    fzerorubigd <fzerorubigd@gmail.com>
  * @copyright 2013 Authors
  * @license   Custom <http://cyberrabbits.net>
@@ -28,28 +28,9 @@ use Cybits\Interactive\ConsoleInterface;
  * @link      http://cyberrabbits.net
  */
 
-abstract class Application extends ParameterHolder implements ConsoleInterface
+class System extends BaseApplication
 {
-    protected $server;
-
-    private $_pid;
-
-    private static $_counter = 1;
-
-    /**
-     * Construct application
-     *
-     * @param Server $server Server for this application to run
-     *
-     * @return void
-     */
-    public function __construct(Server $server)
-    {
-        $this->server = $server;
-        $this->_pid = self::$_counter . time();
-        self::$_counter++;
-    }
-
+    protected static $count = 0;
     /**
      * Boot application
      *
@@ -57,7 +38,11 @@ abstract class Application extends ParameterHolder implements ConsoleInterface
      */
     public function boot()
     {
-
+        if (self::$count > 0) {
+            throw new \Exception('Can not launch more than one instance of this application');
+        }
+        self::$count++;
+        $this->writeLine("Starting system application");
     }
 
     /**
@@ -73,44 +58,15 @@ abstract class Application extends ParameterHolder implements ConsoleInterface
     }
 
     /**
-     * Get server
-     *
-     * @return Server
-     */
-    public function getServer()
-    {
-        return $this->server;
-    }
-
-    /**
-     * Get this instance pid
-     *
-     * @return string
-     */
-    public final function getPid()
-    {
-        return $this->getName() . '-' . $this->_pid;
-    }
-
-    /**
      * Get application name, just use for pid
      *
      * @return string
      */
-    abstract public function getName();
-
-
-    /**
-     * Write a line in this console
-     *
-     * @param string $line Line to write
-     *
-     * @return void
-     */
-    public function writeLine($line)
+    public function getName()
     {
-        $this->server->writeLine($line);
+        return "system";
     }
+
 
     /**
      * Is this line math this console?
@@ -121,6 +77,10 @@ abstract class Application extends ParameterHolder implements ConsoleInterface
      */
     public function match(Message $message)
     {
+        $msg = $message->getRawMessage();
+        if (strlen($msg) > 1 && $msg{0} == '!') {
+            return true;
+        }
         return false;
     }
 
@@ -133,8 +93,13 @@ abstract class Application extends ParameterHolder implements ConsoleInterface
      */
     public function execute(Message $message)
     {
+        $cmd = $message->getRawMessage();
+        if ($cmd == '!list') {
+            foreach ($this->getServer()->getApplications() as $pid => $app) {
+                $this->writeLine("-- $pid ..... " . $app->getName());
+            }
+            return true;
+        }
         return false;
     }
-
-
 }
