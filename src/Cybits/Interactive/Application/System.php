@@ -42,6 +42,7 @@ class System extends BaseApplication
             throw new \Exception('Can not launch more than one instance of this application');
         }
         self::$count++;
+        $this->setAttribute('system', true);
         $this->writeLine("Starting system application");
     }
 
@@ -93,13 +94,47 @@ class System extends BaseApplication
      */
     public function execute(Message $message)
     {
-        $cmd = $message->getRawMessage();
-        if ($cmd == '!list') {
-            foreach ($this->getServer()->getApplications() as $pid => $app) {
-                $this->writeLine("-- $pid ..... " . $app->getName());
-            }
+        $cmd = $message->getCommand();
+        switch ($cmd) {
+        case '!list' :
+            $this->listCommand($message);
             return true;
+        case '!test' :
+            $this->testCommand($message);
+            return true;
+        default:
         }
         return false;
     }
+
+    /**
+     * Run list command
+     *
+     * @param Message $message the run command
+     *
+     * @return void
+     */
+    protected function listCommand(Message $message)
+    {
+        foreach ($this->getServer()->getApplications() as $pid => $app) {
+            $this->writeLine("-- $pid ..... " . $app->getName());
+        }
+    }
+
+    /**
+     * Run list command
+     *
+     * @param Message $message the run command
+     *
+     * @return void
+     */
+    protected function testCommand(Message $message)
+    {
+        $i = 0;
+        while ($param = $message->getArg($i)) {
+            $i++;
+            $this->writeLine($param . '.');
+        }
+    }
+
 }

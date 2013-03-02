@@ -31,6 +31,8 @@ class Message extends ParameterHolder
 {
 
     protected $raw;
+
+    protected $parts;
     /**
      * Create new message
      *
@@ -41,6 +43,7 @@ class Message extends ParameterHolder
     public function __construct($raw)
     {
         $this->raw = $raw;
+        $this->parts = preg_split("/[\s]+/", $raw, -1, PREG_SPLIT_OFFSET_CAPTURE);
     }
 
     /**
@@ -51,6 +54,46 @@ class Message extends ParameterHolder
     public function getRawMessage()
     {
         return $this->raw;
+    }
+
+    /**
+     * Get parameter, argv like :)
+     *
+     * @param integer $position parameter position 0 is the command itself
+     * @param boolean $tilEnd   Return from this parameter to the end (this is the last parameter)
+     *
+     * @return string|null null on no position available
+     */
+    public function getArg($position, $tilEnd = false)
+    {
+        if (isset($this->parts[$position])) {
+            if ($tilEnd) {
+                return substr($this->raw, $this->parts[$position][1]);
+            } else {
+                return $this->parts[$position][0];
+            }
+        }
+        return null;
+    }
+
+    /**
+     * argc :)
+     *
+     * @return integer
+     */
+    public function getArgCount()
+    {
+        return count($this->parts);
+    }
+
+    /**
+     * Get command (parameter 0)
+     *
+     * @return string
+     */
+    public function getCommand()
+    {
+        return $this->getArg(0);
     }
 
 }
