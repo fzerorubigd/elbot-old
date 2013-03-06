@@ -14,6 +14,7 @@
  */
 
 namespace Cybits\Interactive;
+use Cybits\Interactive\StorageInterface;
 use Pimple;
 
 /**
@@ -35,6 +36,18 @@ class Server extends Pimple
 
     private $_state = false;
 
+
+    /**
+     * Constructor
+     *
+     * @param StorageInterface $storageClass Storage class
+     *
+     * @return void
+     */
+    public function __construct(StorageInterface $storageClass)
+    {
+        $this['storage'] = $storageClass;
+    }
     /**
      * Read line (A raw line, any thing whitout any filter)
      * Wait for a line to read, then return the line.
@@ -58,6 +71,21 @@ class Server extends Pimple
         throw new \RuntimeException(__CLASS__ . ' must overwrite ' . __METHOD__);
     }
 
+    /**
+     * Exit application with code
+     *
+     * @param integer $code exit code
+     * @param string  $pid  Application pid
+     *
+     * @return integer
+     */
+    public function exitCode($code, $pid)
+    {
+        // Do more work on this, like logging or force
+        $this->killApplication($pid);
+        return $code;
+    }
+
 
     /**
      * Register new application in server
@@ -73,17 +101,13 @@ class Server extends Pimple
         if (class_exists($class)) {
             $server = &$this;
             $this['_application.' . $name] = function () use ($server, $class) {
-                try {
-                    $app = new $class($server);
-                    if (!$app instanceof Application) {
-                        unset($app);
-                        return false;
-                    }
-                    $app->boot();
-                    return $app;
-                } catch (Exception $e) {
-                    return false;
+                $app = new $class($server);
+                if (!$app instanceof Application) {
+                    unset($app);
+                    throw new \Exception("Invalid application");
                 }
+                $app->boot();
+                return $app;
             };
             if ($autostart) {
                 $this->autostarts[] = $name;
@@ -109,6 +133,7 @@ class Server extends Pimple
             try {
                 $appObject = $this['_application.' . $app];
             } catch (\Exception $e) {
+                echo $e->getMessage() . PHP_EOL;
                 unset($appObject);
                 return false;
             }
@@ -131,7 +156,7 @@ class Server extends Pimple
         if (!$this->_state) {
             return false;
         }
-        if ($this->launched[$app]) {
+        if (isset($this->launched[$app])) {
             if ($this->launched[$app]->hasAttribute('system') && $this->launched[$app]->getAttribute('system', false) === true) {
                 return false;
             }
@@ -235,5 +260,6 @@ class Server extends Pimple
             echo $e->getMessage();
         }
     }
+
 
 }

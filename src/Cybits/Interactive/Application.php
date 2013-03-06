@@ -65,11 +65,21 @@ abstract class Application extends ParameterHolder implements ConsoleInterface
      *
      * @return void
      */
-
-
     public function kill()
     {
 
+    }
+
+    /**
+     * exit code
+     *
+     * @param integer $code exit code
+     *
+     * @return integer
+     */
+    public function exitCode($code)
+    {
+        return $this->server->exitCode($code, $this->getPid());
     }
 
     /**

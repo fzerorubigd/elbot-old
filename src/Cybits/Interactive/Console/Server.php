@@ -54,13 +54,4 @@ class Server extends BaseServer
         echo $line . PHP_EOL;
     }
 
-    /**
-     * Constructor
-     *
-     * @return void
-     */
-    public function __construct()
-    {
-        parent::__construct();
-    }
 }

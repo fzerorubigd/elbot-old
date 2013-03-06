@@ -31,6 +31,8 @@ use Cybits\Interactive\Message;
 class System extends BaseApplication
 {
     protected static $count = 0;
+
+    const NS  = 'interactive.application.system';
     /**
      * Boot application
      *
@@ -43,6 +45,11 @@ class System extends BaseApplication
         }
         self::$count++;
         $this->setAttribute('system', true);
+        $this->server['storage']->registerNamespace(self::NS);
+        $this->server['storage']->set(self::NS, 'test', array(1,2,3,4,5));
+        print_r($this->server['storage']->get(self::NS, 'test'));
+        $this->server['storage']->drop(self::NS, 'test');
+
         $this->writeLine("Starting system application");
     }
 
@@ -102,6 +109,9 @@ class System extends BaseApplication
         case '!test' :
             $this->testCommand($message);
             return true;
+        case '!kill' :
+            $this->killCommand($message);
+            return true;
         default:
         }
         return false;
@@ -119,6 +129,18 @@ class System extends BaseApplication
         foreach ($this->getServer()->getApplications() as $pid => $app) {
             $this->writeLine("-- $pid ..... " . $app->getName());
         }
+    }
+
+    /**
+     * Run kill command
+     *
+     * @param Message $message the run command
+     *
+     * @return void
+     */
+    protected function killCommand(Message $message)
+    {
+
     }
 
     /**
